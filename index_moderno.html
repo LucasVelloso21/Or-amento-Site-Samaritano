@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orçamento de Exames | Hospital Samaritano</title>
+  <meta name="description" content="Sistema interno para orçamento de exames laboratoriais e de imagem.">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --surface-strong: #eef5ff;
+      --text: #172033;
+      --muted: #657386;
+      --muted-2: #8290a3;
+      --line: #d9e2ef;
+      --primary: #0f6f75;
+      --primary-strong: #075f65;
+      --primary-soft: #dff6f3;
+      --accent: #1f8d96;
+      --danger: #c2413a;
+      --danger-soft: #fff1f0;
+      --warning: #9a6a00;
+      --shadow: 0 18px 45px rgba(22, 36, 55, .10);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --focus: 0 0 0 4px rgba(15, 111, 117, .18);
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0d1420;
+      --surface: #121c2b;
+      --surface-soft: #172438;
+      --surface-strong: #142c35;
+      --text: #eef5ff;
+      --muted: #a8b5c6;
+      --muted-2: #8391a3;
+      --line: #25364b;
+      --primary: #5bc8c8;
+      --primary-strong: #8adbd9;
+      --primary-soft: #173d44;
+      --accent: #69d1d3;
+      --danger: #ff8b83;
+      --danger-soft: #321d20;
+      --shadow: 0 18px 45px rgba(0, 0, 0, .35);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 111, 117, .16), transparent 34rem),
+        linear-gradient(135deg, var(--bg), #eef4f9 45%, var(--bg));
+      -webkit-font-smoothing: antialiased;
+    }
+    [data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top left, rgba(91, 200, 200, .16), transparent 34rem),
+        linear-gradient(135deg, #0b111b, #0d1420 55%, #101827);
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+      border-color: var(--primary);
+    }
+
+    .app-shell { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 42px; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px;
+      border: 1px solid rgba(217, 226, 239, .85);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, .82);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+    }
+    [data-theme="dark"] .topbar { background: rgba(18, 28, 43, .82); border-color: rgba(37, 54, 75, .9); }
+    .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .brand-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 18px; background: #fff; padding: 6px; border: 1px solid var(--line); }
+    .brand-monogram { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; background: var(--primary); color: #fff; font-weight: 800; }
+    .brand-kicker { margin: 0 0 4px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--primary); font-weight: 800; }
+    .brand h1 { margin: 0; font-size: clamp(22px, 3vw, 32px); line-height: 1.08; letter-spacing: -.03em; }
+    .brand-subtitle { margin: 7px 0 0; color: var(--muted); font-size: 14px; }
+    .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 800;
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 8px 20px rgba(22, 36, 55, .06);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-soft { background: var(--primary-soft); color: var(--primary-strong); border-color: rgba(15, 111, 117, .12); }
+    .btn-ghost { background: transparent; border-color: var(--line); color: var(--muted); box-shadow: none; }
+    .btn-danger { background: var(--danger-soft); color: var(--danger); border-color: rgba(194, 65, 58, .18); }
+    .btn-small { min-height: 34px; padding: 7px 11px; font-size: 13px; }
+    .btn-icon { width: 42px; padding: 0; display: inline-grid; place-items: center; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+    .stat-card { padding: 18px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 26px rgba(22,36,55,.06); }
+    .stat-label { margin: 0 0 8px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .09em; font-weight: 800; }
+    .stat-value { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -.03em; }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; background: linear-gradient(180deg, var(--surface), var(--surface-soft)); }
+    .card-title { margin: 0; font-size: 16px; font-weight: 900; letter-spacing: -.01em; }
+    .card-note { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .card-body { padding: 20px; }
+
+    .patient-card { margin-bottom: 18px; }
+    .patient-grid { display: grid; grid-template-columns: 1.4fr 1fr .8fr .9fr .75fr; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 850; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 13px;
+      color: var(--text);
+      background: var(--surface-soft);
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    input[readonly] { color: var(--muted); background: var(--surface-strong); }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(480px, .95fr); gap: 18px; align-items: start; }
+    .search-controls { display: grid; grid-template-columns: 1fr 190px; gap: 12px; align-items: end; }
+    .searchbox { position: relative; }
+    .searchbox input { padding-left: 44px; min-height: 52px; font-size: 16px; }
+    .searchbox::before { content: ""; position: absolute; left: 16px; top: 50%; width: 14px; height: 14px; transform: translateY(-50%); border: 2px solid var(--muted-2); border-radius: 50%; }
+    .searchbox::after { content: ""; position: absolute; left: 29px; top: calc(50% + 9px); width: 8px; height: 2px; background: var(--muted-2); transform: rotate(45deg); border-radius: 999px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .chip { border: 1px solid var(--line); color: var(--muted); background: var(--surface-soft); border-radius: 999px; padding: 8px 12px; font-weight: 800; font-size: 12px; }
+    .chip.active { color: var(--primary-strong); background: var(--primary-soft); border-color: rgba(15, 111, 117, .22); }
+
+    .table-wrap { overflow: auto; max-height: 56vh; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+    th { position: sticky; top: 0; z-index: 2; text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; background: var(--surface-soft); border-bottom: 1px solid var(--line); padding: 12px; }
+    td { padding: 13px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: color-mix(in srgb, var(--primary-soft) 34%, transparent); }
+    .exam-name { font-weight: 850; }
+    .exam-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; padding: 5px 9px; border-radius: 999px; background: var(--surface-strong); color: var(--muted); font-size: 12px; font-weight: 850; white-space: nowrap; }
+    .money { font-variant-numeric: tabular-nums; font-weight: 900; white-space: nowrap; }
+    .empty { padding: 34px 20px; text-align: center; color: var(--muted); }
+
+    .budget-card { position: sticky; top: 118px; }
+    .budget-table table { min-width: 680px; }
+    .qty-control { display: inline-flex; align-items: center; gap: 6px; }
+    .qty-control button { width: 30px; height: 30px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); font-weight: 900; }
+    .qty-value { min-width: 26px; text-align: center; font-weight: 900; }
+    .remove-btn { border: 0; color: var(--danger); background: transparent; font-weight: 900; padding: 6px 8px; border-radius: 10px; }
+    .remove-btn:hover { background: var(--danger-soft); }
+    .totals-box { margin-top: 16px; padding: 16px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid var(--line); }
+    .total-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; color: var(--muted); }
+    .total-row strong { color: var(--text); }
+    .discount-line { display: grid; grid-template-columns: 1fr 112px auto; align-items: center; gap: 10px; }
+    .discount-line input { min-height: 38px; text-align: right; }
+    .grand-total { margin-top: 8px; padding-top: 15px; border-top: 1px dashed var(--line); color: var(--text); font-size: 19px; }
+    .grand-total .money { font-size: 26px; color: var(--primary-strong); }
+    .budget-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      color: white;
+      background: #132238;
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .22s ease;
+      z-index: 50;
+      font-weight: 750;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .print-only { display: none; }
+
+    @media (max-width: 1180px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .patient-grid { grid-template-columns: repeat(2, 1fr); }
+      .workspace { grid-template-columns: 1fr; }
+      .budget-card { position: static; }
+    }
+    @media (max-width: 720px) {
+      .app-shell { width: min(100% - 20px, 1480px); padding-top: 12px; }
+      .topbar { position: static; align-items: flex-start; flex-direction: column; }
+      .brand-logo, .brand-monogram { width: 52px; height: 52px; }
+      .stats-grid, .patient-grid, .search-controls { grid-template-columns: 1fr; }
+      .top-actions { width: 100%; justify-content: stretch; }
+      .top-actions .btn { flex: 1; }
+      .card-body { padding: 15px; }
+      .table-wrap { max-height: none; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body { background: white !important; color: #111827; }
+      .app-shell, .toast { display: none !important; }
+      .print-only { display: block !important; }
+      .print-page { font-family: Arial, sans-serif; color: #111827; }
+      .print-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 2px solid #0f6f75; padding-bottom: 12px; margin-bottom: 16px; }
+      .print-brand { display: flex; align-items: center; gap: 12px; }
+      .print-logo { width: 62px; height: 62px; object-fit: contain; }
+      .print-title { margin: 0; font-size: 20px; }
+      .print-subtitle { margin: 4px 0 0; color: #4b5563; font-size: 12px; }
+      .print-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; margin: 14px 0; font-size: 12px; }
+      .print-label { color: #4b5563; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+      .print-value { font-weight: 700; }
+      .print-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 11px; }
+      .print-table th { position: static; background: #eef5ff; color: #111827; padding: 7px; border: 1px solid #cfd8e3; }
+      .print-table td { padding: 7px; border: 1px solid #cfd8e3; }
+      .print-total { margin-left: auto; margin-top: 14px; width: 260px; font-size: 12px; }
+      .print-total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+      .print-grand { border-top: 1px solid #111827; margin-top: 5px; padding-top: 8px; font-size: 16px; font-weight: 800; }
+      .print-footer { margin-top: 26px; color: #4b5563; font-size: 10px; line-height: 1.45; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="data:image/jpeg;base64,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" alt="Hospital Samaritano">
+        <div>
+          <p class="brand-kicker">Hospital Samaritano</p>
+          <h1>Orçamento de Exames</h1>
+          <p class="brand-subtitle">Busca rápida, orçamento particular e impressão em formato profissional.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-soft" type="button" id="focus-search">Nova pesquisa</button>
+        <button class="btn btn-primary" type="button" id="print-top">Imprimir</button>
+        <button class="btn btn-ghost btn-icon" type="button" id="theme-toggle" aria-label="Alternar tema" title="Alternar tema"><span id="theme-label">Tema</span></button>
+      </div>
+    </header>
+
+    <section class="stats-grid" aria-label="Resumo operacional">
+      <article class="stat-card"><p class="stat-label">Base de exames</p><p class="stat-value" id="stat-exames">0</p></article>
+      <article class="stat-card"><p class="stat-label">Itens no orçamento</p><p class="stat-value" id="stat-itens">0</p></article>
+      <article class="stat-card"><p class="stat-label">Subtotal</p><p class="stat-value" id="stat-subtotal">R$ 0,00</p></article>
+      <article class="stat-card"><p class="stat-label">Total final</p><p class="stat-value" id="stat-total">R$ 0,00</p></article>
+    </section>
+
+    <section class="card patient-card">
+      <div class="card-header">
+        <div><h2 class="card-title">Dados do paciente</h2><p class="card-note">Informações utilizadas na impressão e no resumo do atendimento.</p></div>
+      </div>
+      <div class="card-body">
+        <div class="patient-grid">
+          <div class="field"><label for="pac-nome">Paciente</label><input id="pac-nome" type="text" placeholder="Nome completo"></div>
+          <div class="field"><label for="pac-atendente">Atendente</label><input id="pac-atendente" type="text" placeholder="Nome da atendente"></div>
+          <div class="field"><label for="pac-data">Data</label><input id="pac-data" type="date"></div>
+          <div class="field"><label for="pac-contato">Contato do hospital</label><input id="pac-contato" type="text" value="(19) 99804-4102"></div>
+          <div class="field"><label for="pac-convenio">Convênio</label><input id="pac-convenio" type="text" value="PARTICULAR"></div>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace">
+      <section class="card">
+        <div class="card-header">
+          <div><h2 class="card-title">Busca de exames</h2><p class="card-note" id="search-status">Digite pelo menos duas letras para pesquisar.</p></div>
+        </div>
+        <div class="card-body">
+          <div class="search-controls">
+            <div class="field">
+              <label for="search">Nome, código TUSS ou tipo</label>
+              <div class="searchbox"><input id="search" type="search" autocomplete="off" placeholder="Ex.: hemograma, ultrassom, 403..."></div>
+            </div>
+            <div class="field">
+              <label for="tipo-filter">Filtrar por tipo</label>
+              <select id="tipo-filter"><option value="">Todos</option></select>
+            </div>
+          </div>
+          <div class="chips" id="type-chips" aria-label="Atalhos por tipo"></div>
+          <div class="table-wrap" style="margin-top:14px">
+            <table aria-label="Resultados da busca">
+              <thead><tr><th>Exame</th><th>Tipo</th><th>TUSS</th><th style="text-align:right">Valor</th><th></th></tr></thead>
+              <tbody id="results-body"><tr><td colspan="5" class="empty">Aguardando pesquisa.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="card budget-card">
+        <div class="card-header">
+          <div><h2 class="card-title">Orçamento do paciente</h2><p class="card-note">Os dados são salvos automaticamente neste navegador.</p></div>
+          <button class="btn btn-danger btn-small" type="button" id="clear-budget">Limpar</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap budget-table">
+            <table aria-label="Itens do orçamento">
+              <thead><tr><th style="width:42px">#</th><th>Exame</th><th style="text-align:center">Qtde</th><th style="text-align:right">Valor</th><th style="text-align:right">Subtotal</th><th></th></tr></thead>
+              <tbody id="budget-body"><tr><td colspan="6" class="empty">Adicione exames pela busca ao lado.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="totals-box">
+            <div class="total-row"><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div>
+            <div class="total-row discount-line"><span>Desconto</span><input id="desconto" type="number" min="0" max="100" step="0.5" value="0"><span>%</span></div>
+            <div class="total-row"><span>Valor do desconto</span><strong id="discount-value">R$ 0,00</strong></div>
+            <div class="total-row grand-total"><strong>Total a pagar</strong><strong class="money" id="grand-total">R$ 0,00</strong></div>
+          </div>
+          <div class="budget-actions">
+            <button class="btn btn-primary" type="button" id="print-budget">Imprimir orçamento</button>
+            <button class="btn btn-soft" type="button" id="copy-summary">Copiar resumo</button>
+            <button class="btn btn-ghost" type="button" id="clear-search">Limpar busca</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <section class="print-only" id="print-area"></section>
+
+  <script id="dados-exames">
+const EXAMES = [{"nome": "Acido Urico", "tipo": "Sangue/Lab", "tuss": "40301150", "preco": 15.0}, {"nome": "Acido Folico", "tipo": "Sangue/Lab", "tuss": "40301087", "preco": 30.0}, {"nome": "Aluminio", "tipo": "Sangue/Lab", "tuss": "40301273", "preco": 50.0}, {"nome": "Amilase", "tipo": "Sangue/Lab", "tuss": "40301281", "preco": 15.0}, {"nome": "Aslo (anti-estreptolisina)", "tipo": "Sangue/Lab", "tuss": "40306445", "preco": 40.0}, {"nome": "Ácido Valproico", "tipo": "Sangue/Lab", "tuss": "40301168", "preco": 60.0}, {"nome": "Aldolase", "tipo": "Sangue/Lab", "tuss": "40301230", "preco": 20.0}, {"nome": "Aldosterona (urina)", "tipo": "Sangue/Lab", "tuss": "40316050", "preco": 60.0}, {"nome": "Aldosterona (soro)", "tipo": "Sangue/Lab", "tuss": "40316050", "preco": 40.0}, {"nome": "Alfa Fetoproteina", "tipo": "Sangue/Lab", "tuss": "40316068", "preco": 40.0}, {"nome": "Alfa 1 Glicoproteina Ácida", "tipo": "Sangue/Lab", "tuss": "40301257", "preco": 25.0}, {"nome": "Androstenediona", "tipo": "Sangue/Lab", "tuss": "40316076", "preco": 45.0}, {"nome": "Antidesoxirribonuclease B", "tipo": "Sangue/Lab", "tuss": "40307930", "preco": 120.0}, {"nome": "Anticorpos Anti Tireoglobulina", "tipo": "Sangue/Lab", "tuss": "40316106", "preco": 40.0}, {"nome": "Anticorpos Anti Microssomal", "tipo": "Sangue/Lab", "tuss": "40306348", "preco": 40.0}, {"nome": "Antigeno Prostático Específico", "tipo": "Sangue/Lab", "tuss": "40316149", "preco": 40.0}, {"nome": "Antigeno Prostático Específico Total e Livre", "tipo": "Sangue/Lab", "tuss": "40316130", "preco": 40.0}, {"nome": "Antigeno Carcinoembriogenico (CEA)", "tipo": "Sangue/Lab", "tuss": "40316122", "preco": 55.0}, {"nome": "Anticorpos Anti Cardiolipina IGG", "tipo": "Sangue/Lab", "tuss": "40306143", "preco": 70.0}, {"nome": "Anticorpos Anti Cardiolipina IGM", "tipo": "Sangue/Lab", "tuss": "40306151", "preco": 70.0}, {"nome": "Anticorpos Anti Cardiolipina IGA", "tipo": "Sangue/Lab", "tuss": "40306135", "preco": 70.0}, {"nome": "Anticorpo anti-receptor de TSH (RESTH)", "tipo": "Sangue/Lab", "tuss": "40316084", "preco": 80.0}, {"nome": "Antiperoxidase Tireoideana", "tipo": "Sangue/Lab", "tuss": "40306437", "preco": 70.0}, {"nome": "Antigliadina - IGM", "tipo": "Sangue/Lab", "tuss": "40306321", "preco": 80.0}, {"nome": "Antigliadina - IGA", "tipo": "Sangue/Lab", "tuss": "40306305", "preco": 60.0}, {"nome": "Antigliadina - IGG", "tipo": "Sangue/Lab", "tuss": "40306313", "preco": 60.0}, {"nome": "Antimusculo Liso", "tipo": "Sangue/Lab", "tuss": "40306399", "preco": 50.0}, {"nome": "Anti RNP", "tipo": "Sangue/Lab", "tuss": "40306100", "preco": 55.0}, {"nome": "Anti Ro/SSA", "tipo": "Sangue/Lab", "tuss": "40306119", "preco": 40.0}, {"nome": "Anti LA/SSB", "tipo": "Sangue/Lab", "tuss": "40306089", "preco": 40.0}, {"nome": "Anti SM", "tipo": "Sangue/Lab", "tuss": "40306127", "preco": 40.0}, {"nome": "Antitrombina III", "tipo": "Sangue/Lab", "tuss": "40304060", "preco": 60.0}, {"nome": "Antibiograma (QUALQUER MATERIAL)", "tipo": "Sangue/Lab", "tuss": "40310426", "preco": 80.0}, {"nome": "Anticoagulante Lupico", "tipo": "Sangue/Lab", "tuss": "40304019", "preco": 60.0}, {"nome": "Adrenocorticotrofico (ACTH)", "tipo": "Sangue/Lab", "tuss": "40316041", "preco": 60.0}, {"nome": "Anal Swab (cultura+antibiograma)", "tipo": "Sangue/Lab", "tuss": "40303020", "preco": 150.0}, {"nome": "Bilirrubina totais e frações", "tipo": "Sangue/Lab", "tuss": "40301397", "preco": 15.0}, {"nome": "Biotina", "tipo": "Sangue/Lab", "tuss": "40322122", "preco": 300.0}, {"nome": "BHCG, Dosagem Qualitativa", "tipo": "Sangue/Lab", "tuss": "40316327", "preco": 35.0}, {"nome": "BHCG Quantitativo Sangue", "tipo": "Sangue/Lab", "tuss": "40305767", "preco": 50.0}, {"nome": "Beta 2 Microglobulina (urina)", "tipo": "Sangue/Lab", "tuss": "40306470", "preco": 90.0}, {"nome": "Beta 2 Microglobulina (soro)", "tipo": "Sangue/Lab", "tuss": "40306470", "preco": 90.0}, {"nome": "Bacterioscopia", "tipo": "Sangue/Lab", "tuss": "40310060", "preco": 20.0}, {"nome": "Calprotectina", "tipo": "Sangue/Lab", "tuss": "40323986", "preco": 150.0}, {"nome": "Cariotipo Técnicas com Bandas G(Sangue- Constitucional)", "tipo": "Sangue/Lab", "tuss": "40501051", "preco": 550.0}, {"nome": "Coagulograma", "tipo": "Sangue/Lab", "tuss": "40304922", "preco": 60.0}, {"nome": "Creatinina", "tipo": "Sangue/Lab", "tuss": "40301630", "preco": 15.0}, {"nome": "Colesterol Total", "tipo": "Sangue/Lab", "tuss": "40301605", "preco": 15.0}, {"nome": "Colesterol HDL", "tipo": "Sangue/Lab", "tuss": "40301583", "preco": 10.0}, {"nome": "Colesterol LDL", "tipo": "Sangue/Lab", "tuss": "40301591", "preco": 10.0}, {"nome": "Colesterol VLDL", "tipo": "Sangue/Lab", "tuss": "40302695", "preco": 10.0}, {"nome": "Calcio Total, Soro", "tipo": "Sangue/Lab", "tuss": "40301400", "preco": 14.0}, {"nome": "Calcio Ionico", "tipo": "Sangue/Lab", "tuss": "40301419", "preco": 40.0}, {"nome": "Carbamazepina", "tipo": "Sangue/Lab", "tuss": "40301435", "preco": 50.0}, {"nome": "Capacidade de Fixação de Ferro", "tipo": "Sangue/Lab", "tuss": "40301427", "preco": 20.0}, {"nome": "Cloro sérico", "tipo": "Sangue/Lab", "tuss": "40301559", "preco": 15.0}, {"nome": "Coombs Direto", "tipo": "Sangue/Lab", "tuss": "40304108", "preco": 18.0}, {"nome": "Coombs Indireto", "tipo": "Sangue/Lab", "tuss": "40304884", "preco": 50.0}, {"nome": "Creatinofosfoquinase (CPK)", "tipo": "Sangue/Lab", "tuss": "40301648", "preco": 40.0}, {"nome": "Creatinofosfoquinase Fração MB (CKMB)", "tipo": "Sangue/Lab", "tuss": "40301664", "preco": 40.0}, {"nome": "Crescimento do Hormônio HGH", "tipo": "Sangue/Lab", "tuss": "40316203", "preco": 70.0}, {"nome": "Cortisol, Soro", "tipo": "Sangue/Lab", "tuss": "40316190", "preco": 35.0}, {"nome": "Cortisol, Salivar (cada coleta)", "tipo": "Sangue/Lab", "tuss": "40316190", "preco": 70.0}, {"nome": "Citologia Oncotica (liquidos e secreções)", "tipo": "Sangue/Lab", "tuss": "40601137", "preco": 60.0}, {"nome": "Citomegalovirus, Anticorpos IGG", "tipo": "Sangue/Lab", "tuss": "40306666", "preco": 50.0}, {"nome": "Citomegalovirus, Anticorpos IGM", "tipo": "Sangue/Lab", "tuss": "40306674", "preco": 50.0}, {"nome": "Ca 125", "tipo": "Sangue/Lab", "tuss": "40316378", "preco": 70.0}, {"nome": "Ca 199", "tipo": "Sangue/Lab", "tuss": "40316378", "preco": 80.0}, {"nome": "Chagas - IGG Imunofluorescencia", "tipo": "Sangue/Lab", "tuss": "40306615", "preco": 40.0}, {"nome": "Chagas -IGM Imunofluorescencia", "tipo": "Sangue/Lab", "tuss": "40306623", "preco": 45.0}, {"nome": "Chagas (Machado Guerreiro)", "tipo": "Sangue/Lab", "tuss": "40307972", "preco": 80.0}, {"nome": "Chlamydia - IGM", "tipo": "Sangue/Lab", "tuss": "40306640", "preco": 75.0}, {"nome": "Chlamydia - IGG", "tipo": "Sangue/Lab", "tuss": "40306631", "preco": 75.0}, {"nome": "Caxumba - IGG", "tipo": "Sangue/Lab", "tuss": "40306593", "preco": 100.0}, {"nome": "Caxumba - IGM", "tipo": "Sangue/Lab", "tuss": "40306607", "preco": 100.0}, {"nome": "Cromo (soro e urina)", "tipo": "Sangue/Lab", "tuss": "40313310", "preco": 55.0}, {"nome": "Chumbo urina", "tipo": "Sangue/Lab", "tuss": "40313107", "preco": 65.0}, {"nome": "Chumbo sérico", "tipo": "Sangue/Lab", "tuss": "40313107", "preco": 60.0}, {"nome": "Curva Glicêmica (4 Dosagens)", "tipo": "Sangue/Lab", "tuss": "40301680", "preco": 90.0}, {"nome": "Curva Glicêmica (6 Dosagens)", "tipo": "Sangue/Lab", "tuss": "40305228", "preco": 120.0}, {"nome": "Complemento C2", "tipo": "Sangue/Lab", "tuss": "40306690", "preco": 150.0}, {"nome": "Complemento C3", "tipo": "Sangue/Lab", "tuss": "40306704", "preco": 30.0}, {"nome": "Complemento C4", "tipo": "Sangue/Lab", "tuss": "40306712", "preco": 30.0}, {"nome": "Complemento CH-50", "tipo": "Sangue/Lab", "tuss": "40306747", "preco": 40.0}, {"nome": "Cultura de Fezes ( Coprocultura )", "tipo": "Sangue/Lab", "tuss": "40310175", "preco": 60.0}, {"nome": "Cultura para Fungos", "tipo": "Sangue/Lab", "tuss": "40310140", "preco": 170.0}, {"nome": "Cultura de Urina (urocultura)", "tipo": "Sangue/Lab", "tuss": "40310213", "preco": 90.0}, {"nome": "Cultura de Urina (urocultura) + antibiograma", "tipo": "Sangue/Lab", "tuss": "40310213", "preco": 120.0}, {"nome": "CULTURA DE MATERIAIS DIVERSOS + antibiograma", "tipo": "Sangue/Lab", "tuss": "40310124", "preco": 150.0}, {"nome": "Cobre sérico", "tipo": "Sangue/Lab", "tuss": "40301567", "preco": 50.0}, {"nome": "Desidrogenase Lactica", "tipo": "Sangue/Lab", "tuss": "40301729", "preco": 30.0}, {"nome": "Dihidrotestosterona", "tipo": "Sangue/Lab", "tuss": "40316220", "preco": 40.0}, {"nome": "Dihidroepiandrosterona (DHEA)", "tipo": "Sangue/Lab", "tuss": "40316211", "preco": 70.0}, {"nome": "Dimero D", "tipo": "Sangue/Lab", "tuss": "40304906", "preco": 100.0}, {"nome": "Dengue - IGM Anticorpo", "tipo": "Sangue/Lab", "tuss": "40306798", "preco": 100.0}, {"nome": "Dengue - IGG Anticorpo", "tipo": "Sangue/Lab", "tuss": "40306798", "preco": 100.0}, {"nome": "DENGUE ANTIGENO NS1 - teste rápido", "tipo": "Sangue/Lab", "tuss": "40324192", "preco": 50.0}, {"nome": "Dengue Teste Rápido - IGG", "tipo": "Sangue/Lab", "tuss": "40324559", "preco": 25.0}, {"nome": "Dengue Teste Rápido - IGM", "tipo": "Sangue/Lab", "tuss": "40324567", "preco": 25.0}, {"nome": "Anti Endomísio IgG", "tipo": "Sangue/Lab", "tuss": "40306259", "preco": 60.0}, {"nome": "Anti Endomísio IgM", "tipo": "Sangue/Lab", "tuss": "40306259", "preco": 60.0}, {"nome": "Anti Endomísio IgA", "tipo": "Sangue/Lab", "tuss": "40306259", "preco": 60.0}, {"nome": "Estradiol", "tipo": "Sangue/Lab", "tuss": "40316246", "preco": 50.0}, {"nome": "Estrona", "tipo": "Sangue/Lab", "tuss": "40316262", "preco": 60.0}, {"nome": "Espermograma Completo", "tipo": "Sangue/Lab", "tuss": "40309312", "preco": 80.0}, {"nome": "Eletroforese de Lipoproteinas", "tipo": "Sangue/Lab", "tuss": "40301788", "preco": 60.0}, {"nome": "Eletroforese de Proteínas SÉRICA OU URINÁRIA", "tipo": "Sangue/Lab", "tuss": "40301761", "preco": 55.0}, {"nome": "Eletroforese de Proteínas (LÍQUOR)", "tipo": "Sangue/Lab", "tuss": "40309061", "preco": 100.0}, {"nome": "Exame a Fresco de Fezes", "tipo": "Sangue/Lab", "tuss": "40310019", "preco": 25.0}, {"nome": "Eletroforese de Hemoglobina", "tipo": "Sangue/Lab", "tuss": "40304353", "preco": 50.0}, {"nome": "Etanol SÉRICO", "tipo": "Sangue/Lab", "tuss": "40313140", "preco": 75.0}, {"nome": "Etanol URINARIO", "tipo": "Sangue/Lab", "tuss": "40313140", "preco": 60.0}, {"nome": "Fosforo SÉRICO", "tipo": "Sangue/Lab", "tuss": "40301931", "preco": 15.0}, {"nome": "Fosforo URINÁRIO (URINA 1 OU 24HS)", "tipo": "Sangue/Lab", "tuss": "40301931", "preco": 20.0}, {"nome": "Fosfatase Alcalina", "tipo": "Sangue/Lab", "tuss": "40301885", "preco": 20.0}, {"nome": "Fenobarbital", "tipo": "Sangue/Lab", "tuss": "40301834", "preco": 80.0}, {"nome": "Fenitoina", "tipo": "Sangue/Lab", "tuss": "40301826", "preco": 60.0}, {"nome": "Ferro Sérico", "tipo": "Sangue/Lab", "tuss": "40301842", "preco": 25.0}, {"nome": "Ferritina", "tipo": "Sangue/Lab", "tuss": "40316270", "preco": 35.0}, {"nome": "Fator RH E GRUPO SANGUINEO", "tipo": "Sangue/Lab", "tuss": "40304299", "preco": 30.0}, {"nome": "Fator Anti Nuclear", "tipo": "Sangue/Lab", "tuss": "40306852", "preco": 60.0}, {"nome": "Fta Abs - IGG", "tipo": "Sangue/Lab", "tuss": "40307735", "preco": 60.0}, {"nome": "Fta Abs - IGM", "tipo": "Sangue/Lab", "tuss": "40307743", "preco": 80.0}, {"nome": "Teste de Falcização", "tipo": "Sangue/Lab", "tuss": "40304132", "preco": 15.0}, {"nome": "Fator V Leiden por PCR RT", "tipo": "Sangue/Lab", "tuss": "40304175", "preco": 250.0}, {"nome": "Fator VIII, Dosagem do Antigeno de Von Willebrand", "tipo": "Sangue/Lab", "tuss": "40304191", "preco": 250.0}, {"nome": "Glicose", "tipo": "Sangue/Lab", "tuss": "40302040", "preco": 15.0}, {"nome": "Glicosúria", "tipo": "Sangue/Lab", "tuss": "40302040", "preco": 15.0}, {"nome": "Gama GT", "tipo": "Sangue/Lab", "tuss": "40301990", "preco": 20.0}, {"nome": "Glicemia Após Sobrecarga com Dextrosol", "tipo": "Sangue/Lab", "tuss": "40302032", "preco": 40.0}, {"nome": "Globulina Transportadora da Tiroxina (TBG)", "tipo": "Sangue/Lab", "tuss": "40316319", "preco": 120.0}, {"nome": "Globulina de Ligação de Hormônios Sexuais (SHBG)", "tipo": "Sangue/Lab", "tuss": "40316300", "preco": 90.0}, {"nome": "Genotipagem do Sistema HLA", "tipo": "Sangue/Lab", "tuss": "40306887", "preco": 160.0}, {"nome": "Hemograma", "tipo": "Sangue/Lab", "tuss": "40304361", "preco": 45.0}, {"nome": "Hemoglobina", "tipo": "Sangue/Lab", "tuss": "40304345", "preco": 30.0}, {"nome": "Hemoglobina Glicada", "tipo": "Sangue/Lab", "tuss": "40302733", "preco": 50.0}, {"nome": "Hormônio Foliculo Estimulante (FSH)", "tipo": "Sangue/Lab", "tuss": "40316289", "preco": 40.0}, {"nome": "Hormônio Luteinizante (LH)", "tipo": "Sangue/Lab", "tuss": "40316335", "preco": 40.0}, {"nome": "Hepatite B - HBSAG", "tipo": "Sangue/Lab", "tuss": "40307018", "preco": 50.0}, {"nome": "Hepatite B - Anticorpos Anti HBS", "tipo": "Sangue/Lab", "tuss": "40306992", "preco": 60.0}, {"nome": "Hepatite B - Anti HBC IGG", "tipo": "Sangue/Lab", "tuss": "40306950", "preco": 65.0}, {"nome": "Hepatite B - Anti HBC IGM", "tipo": "Sangue/Lab", "tuss": "40306968", "preco": 70.0}, {"nome": "Hepatite C, Sorologia", "tipo": "Sangue/Lab", "tuss": "40307026", "preco": 70.0}, {"nome": "Hiv1 + Hiv2", "tipo": "Sangue/Lab", "tuss": "40307182", "preco": 80.0}, {"nome": "Hepatite A - Anticorpos IGG", "tipo": "Sangue/Lab", "tuss": "40306933", "preco": 70.0}, {"nome": "Hepatite A - Anticorpos IGM", "tipo": "Sangue/Lab", "tuss": "40306941", "preco": 85.0}, {"nome": "Homocisteina SÉRICA", "tipo": "Sangue/Lab", "tuss": "40302113", "preco": 90.0}, {"nome": "Herpes Tipo 1 e 2 IGG", "tipo": "Sangue/Lab", "tuss": "40307085", "preco": 70.0}, {"nome": "Herpes Tipo 1 e 2 IGM", "tipo": "Sangue/Lab", "tuss": "40307093", "preco": 70.0}, {"nome": "Herpes Zoster (VARICELA) - IGG", "tipo": "Sangue/Lab", "tuss": "40307107", "preco": 100.0}, {"nome": "Herpes Zoster (VARICELA) - IGM", "tipo": "Sangue/Lab", "tuss": "40307115", "preco": 120.0}, {"nome": "17- Alfa Hidroxiprogesterona", "tipo": "Sangue/Lab", "tuss": "40316017", "preco": 85.0}, {"nome": "Hemocultura Automatizada", "tipo": "Sangue/Lab", "tuss": "40310256", "preco": 180.0}, {"nome": "Hemocultura por amostra", "tipo": "Sangue/Lab", "tuss": "40310248", "preco": 140.0}, {"nome": "Dosagem de Insulina sérica", "tipo": "Sangue/Lab", "tuss": "40316360", "preco": 35.0}, {"nome": "IGA", "tipo": "Sangue/Lab", "tuss": "40307220", "preco": 50.0}, {"nome": "IGG", "tipo": "Sangue/Lab", "tuss": "40307280", "preco": 50.0}, {"nome": "IGE total", "tipo": "Sangue/Lab", "tuss": "40307271", "preco": 50.0}, {"nome": "IGM", "tipo": "Sangue/Lab", "tuss": "40307301", "preco": 50.0}, {"nome": "IGE para Lactoalbumina", "tipo": "Sangue/Lab", "tuss": "40307263", "preco": 25.0}, {"nome": "Ige para Caseina", "tipo": "Sangue/Lab", "tuss": "40307263", "preco": 25.0}, {"nome": "IGE para Lactoglobulina", "tipo": "Sangue/Lab", "tuss": "40307263", "preco": 25.0}, {"nome": "Indice de Saturação da Transferrina", "tipo": "Sangue/Lab", "tuss": "40321231", "preco": 25.0}, {"nome": "Leptina", "tipo": "Sangue/Lab", "tuss": "40305422", "preco": 120.0}, {"nome": "Lipidograma - PDG", "tipo": "Sangue/Lab", "tuss": "40302750", "preco": 70.0}, {"nome": "Dosagem/pesquisa de Litio", "tipo": "Sangue/Lab", "tuss": "40302229", "preco": 50.0}, {"nome": "Lipase", "tipo": "Sangue/Lab", "tuss": "40302199", "preco": 25.0}, {"nome": "Magnésio sérico", "tipo": "Sangue/Lab", "tuss": "40302237", "preco": 25.0}, {"nome": "Hormônio Anti Mulleriano", "tipo": "Sangue/Lab", "tuss": "40316890", "preco": 350.0}, {"nome": "Mucoproteinas", "tipo": "Sangue/Lab", "tuss": "40302660", "preco": 40.0}, {"nome": "Metanefrinas Urinárias", "tipo": "Sangue/Lab", "tuss": "40311163", "preco": 180.0}, {"nome": "Microalbuminuria Urina Simples", "tipo": "Sangue/Lab", "tuss": "40311171", "preco": 30.0}, {"nome": "Microalbuminuria Urina 24 horas", "tipo": "Sangue/Lab", "tuss": "40311171", "preco": 30.0}, {"nome": "Microalbuminuria Urina 12 horas", "tipo": "Sangue/Lab", "tuss": "40311171", "preco": 30.0}, {"nome": "Mioglobina", "tipo": "Sangue/Lab", "tuss": "40302255", "preco": 60.0}, {"nome": "Potassio", "tipo": "Sangue/Lab", "tuss": "40302318", "preco": 15.0}, {"nome": "Progesterona", "tipo": "Sangue/Lab", "tuss": "40316408", "preco": 70.0}, {"nome": "Prolactina", "tipo": "Sangue/Lab", "tuss": "40316416", "preco": 55.0}, {"nome": "Proteina C Reativa", "tipo": "Sangue/Lab", "tuss": "40308391", "preco": 40.0}, {"nome": "Paratohormonio (PTH)", "tipo": "Sangue/Lab", "tuss": "40305465", "preco": 80.0}, {"nome": "Proteinas Totais e Frações", "tipo": "Sangue/Lab", "tuss": "40302385", "preco": 45.0}, {"nome": "Proteinas Totais", "tipo": "Sangue/Lab", "tuss": "40302377", "preco": 20.0}, {"nome": "Peptideo C", "tipo": "Sangue/Lab", "tuss": "40316394", "preco": 70.0}, {"nome": "Parasitologico", "tipo": "Sangue/Lab", "tuss": "40303110", "preco": 20.0}, {"nome": "Provas de Função Tireoideana (T3, T4, Indices e TSH)", "tipo": "Sangue/Lab", "tuss": "40305627", "preco": 100.0}, {"nome": "Perfil Reumatologico (ácido úrico, eletroforese de proteínas, fan, vhs, prova do látex p/ FR, w. rose)", "tipo": "Sangue/Lab", "tuss": "40312127", "preco": 200.0}, {"nome": "Prova Atividade de Febre Reumatica (aslo, eletroforese de proteínas, mucoproteínas e Proteína C reativa)", "tipo": "Sangue/Lab", "tuss": "40312143", "preco": 170.0}, {"nome": "Provas de Função Hepatica(bilirrubinas, eletroforese de proteínas, FAL, TGO, TGP e Gama-GT)", "tipo": "Sangue/Lab", "tuss": "40312151", "preco": 150.0}, {"nome": "BNP - Peptideo Natriuretico Cerebral", "tipo": "Sangue/Lab", "tuss": "40302776", "preco": 250.0}, {"nome": "Rubeola - IGG", "tipo": "Sangue/Lab", "tuss": "40307697", "preco": 60.0}, {"nome": "Rubeola - IGM", "tipo": "Sangue/Lab", "tuss": "40307700", "preco": 80.0}, {"nome": "Reticulócitos", "tipo": "Sangue/Lab", "tuss": "40304558", "preco": 15.0}, {"nome": "Rotavírus IGG", "tipo": "Sangue/Lab", "tuss": "40324443", "preco": 250.0}, {"nome": "Renina", "tipo": "Sangue/Lab", "tuss": "40316432", "preco": 60.0}, {"nome": "Urina 1 (rotina de urina)", "tipo": "Sangue/Lab", "tuss": "40311210", "preco": 25.0}, {"nome": "Sódio sérico", "tipo": "Sangue/Lab", "tuss": "40302423", "preco": 15.0}, {"nome": "Sangue Oculto nas Fezes", "tipo": "Sangue/Lab", "tuss": "40303136", "preco": 30.0}, {"nome": "Selenio sérico", "tipo": "Sangue/Lab", "tuss": "40313190", "preco": 110.0}, {"nome": "Sexagem fetal", "tipo": "Sangue/Lab", "tuss": "40312330", "preco": 180.0}, {"nome": "Sulfato de Dihidroepiandrosterona (S-DHEA)", "tipo": "Sangue/Lab", "tuss": "40316459", "preco": 80.0}, {"nome": "Somatomedina C (IGF-1)", "tipo": "Sangue/Lab", "tuss": "40316440", "preco": 60.0}, {"nome": "Substâncias Redutoras nas Fezes", "tipo": "Sangue/Lab", "tuss": "40303152", "preco": 80.0}, {"nome": "Sifilis - VDRL", "tipo": "Sangue/Lab", "tuss": "40307760", "preco": 25.0}, {"nome": "Sarampo IGG", "tipo": "Sangue/Lab", "tuss": "40308120", "preco": 70.0}, {"nome": "Sarampo IGM", "tipo": "Sangue/Lab", "tuss": "40308138", "preco": 80.0}, {"nome": "Sorologia para Penumococos (23 sorotipos)", "tipo": "Sangue/Lab", "tuss": "—", "preco": 550.0}, {"nome": "Triglicérides", "tipo": "Sangue/Lab", "tuss": "40302547", "preco": 25.0}, {"nome": "Transaminase Glutâmico Oxalacética (TGO)", "tipo": "Sangue/Lab", "tuss": "40302504", "preco": 15.0}, {"nome": "Transaminase Glutâmico Pirúvica (TGP)", "tipo": "Sangue/Lab", "tuss": "40302512", "preco": 15.0}, {"nome": "Transferrina", "tipo": "Sangue/Lab", "tuss": "40302520", "preco": 55.0}, {"nome": "T4 Livre", "tipo": "Sangue/Lab", "tuss": "40316491", "preco": 50.0}, {"nome": "T4 Total", "tipo": "Sangue/Lab", "tuss": "40316548", "preco": 50.0}, {"nome": "T3 Total", "tipo": "Sangue/Lab", "tuss": "40316556", "preco": 60.0}, {"nome": "T3 Livre", "tipo": "Sangue/Lab", "tuss": "40316467", "preco": 65.0}, {"nome": "T3 Reverso", "tipo": "Sangue/Lab", "tuss": "40316483", "preco": 150.0}, {"nome": "Tireoglobulina (AAT)", "tipo": "Sangue/Lab", "tuss": "40316530", "preco": 90.0}, {"nome": "Testosterona", "tipo": "Sangue/Lab", "tuss": "40316513", "preco": 20.0}, {"nome": "dosagem ou pesquisa Testosterona Livre", "tipo": "Sangue/Lab", "tuss": "40316505", "preco": 30.0}, {"nome": "Tempo de Protrombina", "tipo": "Sangue/Lab", "tuss": "40304590", "preco": 30.0}, {"nome": "Tempo de Tromboplastina Parcial Ativado", "tipo": "Sangue/Lab", "tuss": "40304639", "preco": 30.0}, {"nome": "Tireoestimulante, Hormônio TSH", "tipo": "Sangue/Lab", "tuss": "40316521", "preco": 40.0}, {"nome": "Teste de Tolerância a Lactose", "tipo": "Sangue/Lab", "tuss": "40302164", "preco": 90.0}, {"nome": "Dosagem/pesquisa de troponina", "tipo": "Sangue/Lab", "tuss": "40302571", "preco": 70.0}, {"nome": "Toxoplasmose - IGG", "tipo": "Sangue/Lab", "tuss": "40307824", "preco": 50.0}, {"nome": "Toxoplasmose - IGM", "tipo": "Sangue/Lab", "tuss": "40307832", "preco": 50.0}, {"nome": "Teste de Avidez Toxoplamose IgG", "tipo": "Sangue/Lab", "tuss": "40306461", "preco": 116.0}, {"nome": "Anticorpos Anti Transglutaminase IgA", "tipo": "Sangue/Lab", "tuss": "40308553", "preco": 75.0}, {"nome": "Anticorpos Anti Transglutaminase IgG", "tipo": "Sangue/Lab", "tuss": "40308561", "preco": 110.0}, {"nome": "Ureia urina", "tipo": "Sangue/Lab", "tuss": "40302580", "preco": 20.0}, {"nome": "Ureia sérica", "tipo": "Sangue/Lab", "tuss": "40302580", "preco": 20.0}, {"nome": "VHS - Velocidade de Hemossedimentação", "tipo": "Sangue/Lab", "tuss": "40304370", "preco": 35.0}, {"nome": "Vitamina B1", "tipo": "Sangue/Lab", "tuss": "40302784", "preco": 110.0}, {"nome": "Vitamina B3", "tipo": "Sangue/Lab", "tuss": "40302806", "preco": 440.0}, {"nome": "Vitamina B5", "tipo": "Sangue/Lab", "tuss": "40322262", "preco": 380.0}, {"nome": "Vitamina B6", "tipo": "Sangue/Lab", "tuss": "40302814", "preco": 100.0}, {"nome": "Vitamina B12", "tipo": "Sangue/Lab", "tuss": "40316572", "preco": 30.0}, {"nome": "Vitamina C", "tipo": "Sangue/Lab", "tuss": "40301060", "preco": 80.0}, {"nome": "Vitamina D3 (25 hidroxivitamina)", "tipo": "Sangue/Lab", "tuss": "40302830", "preco": 100.0}, {"nome": "Vitamina D (1,25 Dihidroxicolicalciferol)", "tipo": "Sangue/Lab", "tuss": "40305015", "preco": 90.0}, {"nome": "Vitamina A", "tipo": "Sangue/Lab", "tuss": "40302601", "preco": 100.0}, {"nome": "Vitamina E", "tipo": "Sangue/Lab", "tuss": "40302610", "preco": 100.0}, {"nome": "Waaler Rose", "tipo": "Sangue/Lab", "tuss": "40307867", "preco": 50.0}, {"nome": "Zinco sérico", "tipo": "Sangue/Lab", "tuss": "40304523", "preco": 50.0}, {"nome": "Strepv", "tipo": "Sangue/Lab", "tuss": "40310558", "preco": 90.0}, {"nome": "Strepa", "tipo": "Sangue/Lab", "tuss": "40310558", "preco": 90.0}, {"nome": "Fator Reumatoide", "tipo": "Sangue/Lab", "tuss": "40308030", "preco": 35.0}, {"nome": "Micologico a Fresco", "tipo": "Sangue/Lab", "tuss": "40310019", "preco": 40.0}, {"nome": "Clearence de Creatinina", "tipo": "Sangue/Lab", "tuss": "40301508", "preco": 35.0}, {"nome": "URICOSUMIA (Clearance de ácido úrico)", "tipo": "Sangue/Lab", "tuss": "40301494", "preco": 45.0}, {"nome": "Curva Insulinica 5 Tempos", "tipo": "Sangue/Lab", "tuss": "40305236", "preco": 90.0}, {"nome": "Western Blot (Anticorpos Anti-hiv) - Pesquisa e/ou Dosagem", "tipo": "Sangue/Lab", "tuss": "40307875", "preco": 300.0}, {"nome": "Proteinuria - Urina 24hs", "tipo": "Sangue/Lab", "tuss": "40311180", "preco": 20.0}, {"nome": "Indice Creatinina/Proteina", "tipo": "Sangue/Lab", "tuss": "40322483", "preco": 55.0}, {"nome": "Albumina", "tipo": "Sangue/Lab", "tuss": "40301222", "preco": 15.0}, {"nome": "Teste rápido COVID19", "tipo": "Sangue/Lab", "tuss": "40322054", "preco": 150.0}, {"nome": "COVID19 - PCR Rt", "tipo": "Sangue/Lab", "tuss": "40314618", "preco": 350.0}, {"nome": "Serotonina", "tipo": "Sangue/Lab", "tuss": "40321550", "preco": 90.0}, {"nome": "Sorologia COVID IGG/IGM", "tipo": "Sangue/Lab", "tuss": "40314619", "preco": 250.0}, {"nome": "Anticorpos Totais COVID19", "tipo": "Sangue/Lab", "tuss": "40314620", "preco": 120.0}, {"nome": "Zika Virus IGG", "tipo": "Sangue/Lab", "tuss": "40324591", "preco": 400.0}, {"nome": "Zika Virus IGM", "tipo": "Sangue/Lab", "tuss": "40324605", "preco": 400.0}, {"nome": "CTX1", "tipo": "Sangue/Lab", "tuss": "40317340", "preco": 180.0}, {"nome": "Ultrassom Abdome Total e Superior", "tipo": "Imagem", "tuss": "—", "preco": 230.0}, {"nome": "Ultrassom Mamas", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Pélvico Feminino + Transvaginal", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Ultrassom Próstata (via abdominal)", "tipo": "Imagem", "tuss": "—", "preco": 110.0}, {"nome": "Ultrassom Rins e Vias ou Aparelho Urinário Feminino e Masculino", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Cervical ou Tireoide", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Partes Moles", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Região Inguinal", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Parede Abdominal", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Obstétrico Inicial", "tipo": "Imagem", "tuss": "—", "preco": 140.0}, {"nome": "Ultrassom Obstétrico Normal", "tipo": "Imagem", "tuss": "—", "preco": 140.0}, {"nome": "Ultrassom com Doppler Cervical e Tireoide", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Articular Ombro", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Ultrassom Articular Cotovelo", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Braço, Antebraço, Punho ou Mão", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Tornozelo, Calcâneo e Pé", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Coxa ou Panturrilha", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Quadril (Adulto)", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Ultrassom Articular Joelho", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Pescoço", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Articular Pele e Subcutâneo (partes moles)", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Ultrassom Abdome Total Superior e Inferior", "tipo": "Imagem", "tuss": "—", "preco": 230.0}, {"nome": "Ultrassom Próstata / Abdome Inferior Masculino", "tipo": "Imagem", "tuss": "—", "preco": 110.0}, {"nome": "Ultrassom Rins e Vias ou Aparelho Urinario Feminino e Masculino", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Testículos e Bolsa Escrotal", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Mamas (sem restrição)", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Crânio / Fontanela (moleira de bebê)", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Ultrassom Superficiais: Cervical/Axila/Músculo/Tendão", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Glândula Salivar / Parótidas", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Obstétrico Gemelar", "tipo": "Imagem", "tuss": "—", "preco": 240.0}, {"nome": "Ultrassom com Doppler Cervical ou Tireoide", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom com Doppler Testículos e Bolsa Escrotal", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom com Doppler Obstétrico Gemelar", "tipo": "Imagem", "tuss": "—", "preco": 240.0}, {"nome": "Ultrassom com Doppler Transfontenela", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom com Doppler Venoso de Membro Inferior", "tipo": "Imagem", "tuss": "—", "preco": 360.0}, {"nome": "Ultrassom com Doppler Venoso e Arterial de Membro Inferior", "tipo": "Imagem", "tuss": "—", "preco": 720.0}, {"nome": "Ultrassom com Doppler Venoso e Arterial de Membro Superior", "tipo": "Imagem", "tuss": "—", "preco": 720.0}, {"nome": "Ultrassom com Doppler Venoso de Membro Superior", "tipo": "Imagem", "tuss": "—", "preco": 360.0}, {"nome": "Ultrassom com Doppler Carótidas e Vertebrais", "tipo": "Imagem", "tuss": "—", "preco": 800.0}, {"nome": "Ultrassom Abdome Total / Superior Inferior", "tipo": "Imagem", "tuss": "—", "preco": 230.0}, {"nome": "Ultrassom Rins e Vias / Aparelho Urinário Masculino e Feminino", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Bolsa Escrotal (com ou sem Doppler)", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Próstata / Abdome Inferior Masculino", "tipo": "Imagem", "tuss": "—", "preco": 110.0}, {"nome": "Ultrassom Tireóide", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Transvaginal (com ou sem Doppler)", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Ultrassom Glândulas Salivares", "tipo": "Imagem", "tuss": "—", "preco": 160.0}, {"nome": "Ultrassom Órgãos Superficiais (Tireoide, Escroto, Pênis, Crânio)", "tipo": "Imagem", "tuss": "—", "preco": 120.0}, {"nome": "Ultrassom Próstata (via abdominal ou transretal)", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Pélvico / Abdome Inferior Feminino", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Ultrassom Articular Cervical", "tipo": "Imagem", "tuss": "—", "preco": 190.0}, {"nome": "Ultrassom Obstétrico 1 Trimestre (Endovaginal)", "tipo": "Imagem", "tuss": "—", "preco": 140.0}, {"nome": "TC Crânio, Órbita ou Sela Túrcica", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Abdome Total", "tipo": "Imagem", "tuss": "—", "preco": 800.0}, {"nome": "TC Abdome Superior", "tipo": "Imagem", "tuss": "—", "preco": 600.0}, {"nome": "TC Articulações", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Coluna Lombar Dorsal Cervical", "tipo": "Imagem", "tuss": "—", "preco": 400.0}, {"nome": "TC Mastóides ou Ouvidos", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Pelve ou Bacia", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Segmentos (Braço, Antebraço, Etc)", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Tórax", "tipo": "Imagem", "tuss": "—", "preco": 600.0}, {"nome": "TC Face, Seios da Face ou Articulação Temporal", "tipo": "Imagem", "tuss": "—", "preco": 440.0}, {"nome": "TC Mandíbula", "tipo": "Imagem", "tuss": "—", "preco": 755.0}, {"nome": "TC Pescoço", "tipo": "Imagem", "tuss": "—", "preco": 905.0}, {"nome": "Raio-X Antebraço Direito ou Esquerdo 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Arcos Costais ou Hemitórax 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Raio-X Articulação Sacro Ilíaca", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Articulação Temporo Mandibular Bilateral", "tipo": "Imagem", "tuss": "—", "preco": 170.0}, {"nome": "Raio-X Articulação Tibio Társica", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Bacia e Quadril 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Braço Direito e Esquerdo 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Calcâneo Direito ou Esquerdo 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Cavum 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Clavicula Direita ou Esquerda 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Coluna Cervical 2 ou 3 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Coluna Cervical 4 ou 5 Posições Obliquas", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Raio-X Coluna Dorsal 1 a 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Raio-X Coluna Lombo Sacra 1 a 3 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Coluna Lombo Sacra 4 ou 5 Posições", "tipo": "Imagem", "tuss": "—", "preco": 170.0}, {"nome": "Raio-X Coluna Lombo Sacra 7 Posições", "tipo": "Imagem", "tuss": "—", "preco": 200.0}, {"nome": "Raio-X Cotovelo Direito ou Esquerdo 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Coxa Direita ou Esquerda 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Crânio 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 120.0}, {"nome": "Raio-X Crânio 3 Posições", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Raio-X Crânio 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Raio-X Escapula ou Ombro Direito ou Esquerdo 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Fêmur Direito ou Esquerdo 1 a 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 120.0}, {"nome": "Raio-X Coxo Femural", "tipo": "Imagem", "tuss": "—", "preco": 120.0}, {"nome": "Raio-X Joelho Direito ou Esquerdo 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Joelho Direito ou Esquerdo 3 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Mão Direita ou Esquerda 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Mastóide Direita, Esquerda ou Bilateral", "tipo": "Imagem", "tuss": "—", "preco": 110.0}, {"nome": "Raio-X Omoplata", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Ossos da Face ou Nariz 1 a 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Raio-X Perna Direita ou Esquerda 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Punho Direito ou Esquerdo 1 a 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 120.0}, {"nome": "Raio-X Seios da Face 1 a 3 Posições", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "Raio-X Seios da Face 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Raio-X Sela Túrcica", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Tórax 1 ou 2 Posições", "tipo": "Imagem", "tuss": "—", "preco": 90.0}, {"nome": "Raio-X Tórax 3 ou 4 Posições", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Ecocardiograma com Stress Farmacológico (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 600.0}, {"nome": "Ecocardiograma Transesofágico Transtorácico (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 700.0}, {"nome": "Ecocardiograma Transtorácico (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 350.0}, {"nome": "ECG até 12 Derivações (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 100.0}, {"nome": "MAPA (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 150.0}, {"nome": "Holter (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 250.0}, {"nome": "Holter Hospitalar (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 130.0}, {"nome": "Citologia Oncótica (Papanicolau) (somente dinheiro)", "tipo": "Imagem", "tuss": "—", "preco": 140.0}];
+  </script>
+  <script>
+    const STORE_KEY = 'orcamento-exames-samaritano-v2';
+    const state = { items: [], query: '', tipo: '', desconto: 0 };
+    const fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    const byId = (id) => document.getElementById(id);
+    const normalize = (value) => String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const money = (value) => fmt.format(Number(value || 0));
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+    const dateBR = (iso) => {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return y && m && d ? `${d}/${m}/${y}` : iso;
+    };
+    const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+
+    document.addEventListener('DOMContentLoaded', () => {
+      hydrate();
+      setupTheme();
+      populateTypes();
+      bindEvents();
+      renderAll();
+      byId('stat-exames').textContent = EXAMES.length.toLocaleString('pt-BR');
+      if (!byId('pac-data').value) byId('pac-data').value = todayISO();
+      persist();
+    });
+
+    function bindEvents() {
+      ['pac-nome', 'pac-atendente', 'pac-data', 'pac-contato', 'pac-convenio'].forEach(id => byId(id).addEventListener('input', () => { persist(); updatePrintArea(); }));
+      byId('search').addEventListener('input', (event) => { state.query = event.target.value; renderResults(); });
+      byId('tipo-filter').addEventListener('change', (event) => { state.tipo = event.target.value; syncChips(); renderResults(); persist(); });
+      byId('desconto').addEventListener('input', (event) => { state.desconto = clampDiscount(event.target.value); event.target.value = state.desconto; renderBudget(); persist(); });
+      byId('clear-budget').addEventListener('click', clearBudget);
+      byId('print-budget').addEventListener('click', printBudget);
+      byId('print-top').addEventListener('click', printBudget);
+      byId('copy-summary').addEventListener('click', copySummary);
+      byId('clear-search').addEventListener('click', clearSearch);
+      byId('focus-search').addEventListener('click', () => { byId('search').focus(); byId('search').select(); });
+    }
+
+    function setupTheme() {
+      const saved = localStorage.getItem('tema-orcamento-exames');
+      const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      applyTheme(saved || preferred);
+      byId('theme-toggle').addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem('tema-orcamento-exames', next);
+      });
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.dataset.theme = 'dark';
+        byId('theme-label').textContent = 'Claro';
+      } else {
+        delete document.documentElement.dataset.theme;
+        byId('theme-label').textContent = 'Escuro';
+      }
+    }
+
+    function populateTypes() {
+      const types = [...new Set(EXAMES.map(e => e.tipo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const select = byId('tipo-filter');
+      types.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        select.appendChild(option);
+      });
+      const chips = byId('type-chips');
+      chips.innerHTML = '<button class="chip active" type="button" data-type="">Todos</button>' + types.slice(0, 6).map(type => `<button class="chip" type="button" data-type="${safe(type)}">${safe(type)}</button>`).join('');
+      chips.addEventListener('click', (event) => {
+        const btn = event.target.closest('.chip');
+        if (!btn) return;
+        state.tipo = btn.dataset.type || '';
+        select.value = state.tipo;
+        syncChips();
+        renderResults();
+        persist();
+      });
+    }
+
+    function syncChips() {
+      document.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', (chip.dataset.type || '') === state.tipo));
+    }
+
+    function getFilteredResults() {
+      const q = normalize(state.query);
+      const t = normalize(state.tipo);
+      if (q.length < 2 && !t) return [];
+      return EXAMES.filter(exam => {
+        const matchesType = !t || normalize(exam.tipo) === t;
+        if (!matchesType) return false;
+        if (q.length < 2) return true;
+        return [exam.nome, exam.tipo, exam.tuss, exam.preco].some(value => normalize(value).includes(q));
+      }).slice(0, 120);
+    }
+
+    function renderResults() {
+      const body = byId('results-body');
+      const results = getFilteredResults();
+      const hasQuery = normalize(state.query).length >= 2 || state.tipo;
+      if (!hasQuery) {
+        body.innerHTML = '<tr><td colspan="5" class="empty">Aguardando pesquisa.</td></tr>';
+        byId('search-status').textContent = 'Digite pelo menos duas letras para pesquisar.';
+        return;
+      }
+      byId('search-status').textContent = `${results.length} resultado(s) exibido(s).`;
+      if (!results.length) {
+        body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum exame encontrado. Verifique a grafia ou remova filtros.</td></tr>';
+        return;
+      }
+      body.innerHTML = results.map((exam, index) => `
+        <tr>
+          <td><div class="exam-name">${safe(exam.nome)}</div><div class="exam-meta">Registro ${index + 1} de ${results.length}</div></td>
+          <td><span class="badge">${safe(exam.tipo || '-')}</span></td>
+          <td>${safe(exam.tuss || '-')}</td>
+          <td class="money" style="text-align:right">${money(exam.preco)}</td>
+          <td style="text-align:right"><button class="btn btn-primary btn-small" type="button" data-add="${index}">Adicionar</button></td>
+        </tr>`).join('');
+      body.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => addExam(results[Number(btn.dataset.add)])));
+    }
+
+    function addExam(exam) {
+      const key = `${exam.nome}|${exam.tuss}|${exam.preco}`;
+      const current = state.items.find(item => item.key === key);
+      if (current) current.qty += 1;
+      else state.items.push({ key, nome: exam.nome, tipo: exam.tipo, tuss: exam.tuss, preco: Number(exam.preco || 0), qty: 1 });
+      renderBudget();
+      persist();
+      toast(current ? 'Quantidade atualizada no orçamento.' : 'Exame adicionado ao orçamento.');
+    }
+
+    function renderBudget() {
+      const body = byId('budget-body');
+      if (!state.items.length) {
+        body.innerHTML = '<tr><td colspan="6" class="empty">Adicione exames pela busca ao lado.</td></tr>';
+      } else {
+        body.innerHTML = state.items.map((item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td><div class="exam-name">${safe(item.nome)}</div><div class="exam-meta">${safe(item.tipo || '-')} · TUSS ${safe(item.tuss || '-')}</div></td>
+            <td style="text-align:center"><div class="qty-control"><button type="button" data-dec="${index}">−</button><span class="qty-value">${item.qty}</span><button type="button" data-inc="${index}">+</button></div></td>
+            <td class="money" style="text-align:right">${money(item.preco)}</td>
+            <td class="money" style="text-align:right">${money(item.preco * item.qty)}</td>
+            <td style="text-align:right"><button class="remove-btn" type="button" data-remove="${index}">Remover</button></td>
+          </tr>`).join('');
+        body.querySelectorAll('[data-inc]').forEach(btn => btn.addEventListener('click', () => changeQty(Number(btn.dataset.inc), 1)));
+        body.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => changeQty(Number(btn.dataset.dec), -1)));
+        body.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => removeItem(Number(btn.dataset.remove))));
+      }
+      const subtotal = state.items.reduce((sum, item) => sum + item.preco * item.qty, 0);
+      const discount = subtotal * (clampDiscount(state.desconto) / 100);
+      const total = Math.max(0, subtotal - discount);
+      byId('subtotal').textContent = money(subtotal);
+      byId('discount-value').textContent = `− ${money(discount)}`;
+      byId('grand-total').textContent = money(total);
+      byId('stat-itens').textContent = state.items.reduce((sum, item) => sum + item.qty, 0).toLocaleString('pt-BR');
+      byId('stat-subtotal').textContent = money(subtotal);
+      byId('stat-total').textContent = money(total);
+      updatePrintArea();
+    }
+
+    function changeQty(index, delta) {
+      const item = state.items[index];
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) state.items.splice(index, 1);
+      renderBudget();
+      persist();
+    }
+
+    function removeItem(index) {
+      state.items.splice(index, 1);
+      renderBudget();
+      persist();
+      toast('Item removido do orçamento.');
+    }
+
+    function clampDiscount(value) {
+      const n = Number(value || 0);
+      return Math.min(100, Math.max(0, Number.isFinite(n) ? n : 0));
+    }
+
+    function clearBudget() {
+      if (!state.items.length) return toast('O orçamento já está vazio.');
+      if (!confirm('Deseja limpar todos os itens do orçamento?')) return;
+      state.items = [];
+      state.desconto = 0;
+      byId('desconto').value = 0;
+      renderBudget();
+      persist();
+      toast('Orçamento limpo.');
+    }
+
+    function clearSearch() {
+      state.query = '';
+      state.tipo = '';
+      byId('search').value = '';
+      byId('tipo-filter').value = '';
+      syncChips();
+      renderResults();
+      byId('search').focus();
+    }
+
+    function getPatient() {
+      return {
+        nome: byId('pac-nome').value.trim(),
+        atendente: byId('pac-atendente').value.trim(),
+        data: byId('pac-data').value,
+        contato: byId('pac-contato').value.trim(),
+        convenio: byId('pac-convenio').value.trim()
+      };
+    }
+
+    function persist() {
+      const payload = { patient: getPatient(), items: state.items, desconto: state.desconto, tipo: state.tipo };
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(payload)); } catch (error) { console.warn(error); }
+    }
+
+    function hydrate() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+        if (saved.patient) {
+          Object.entries(saved.patient).forEach(([key, value]) => { const el = byId(`pac-${key}`); if (el) el.value = value || ''; });
+        }
+        if (Array.isArray(saved.items)) state.items = saved.items.map(item => ({ ...item, preco: Number(item.preco || 0), qty: Number(item.qty || 1) }));
+        state.desconto = clampDiscount(saved.desconto);
+        state.tipo = saved.tipo || '';
+        byId('desconto').value = state.desconto;
+      } catch (error) { console.warn(error); }
+    }
+
+    function renderAll() {
+      if (state.tipo) byId('tipo-filter').value = state.tipo;
+      syncChips();
+      renderResults();
+      renderBudget();
+    }
+
+    function updatePrintArea() {
+      const patient = getPatient();
+      const subtotal = state.items.reduce((sum, item) => sum + item.preco * item.qty, 0);
+      const discount = subtotal * (clampDiscount(state.desconto) / 100);
+      const total = Math.max(0, subtotal - discount);
+      const rows = state.items.length ? state.items.map((item, index) => `
+        <tr><td>${index + 1}</td><td>${safe(item.nome)}<br><span style="color:#4b5563">${safe(item.tipo || '-')} · TUSS ${safe(item.tuss || '-')}</span></td><td style="text-align:center">${item.qty}</td><td style="text-align:right">${money(item.preco)}</td><td style="text-align:right">${money(item.preco * item.qty)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#4b5563">Nenhum exame selecionado.</td></tr>';
+      byId('print-area').innerHTML = `
+        <div class="print-page">
+          <div class="print-head">
+            <div class="print-brand">${`data:image/jpeg;base64,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` ? `<img class="print-logo" src="data:image/jpeg;base64,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" alt="Hospital Samaritano">` : ''}<div><h1 class="print-title">Orçamento de Exames Particulares</h1><p class="print-subtitle">Hospital Samaritano · Documento gerado em ${new Date().toLocaleString('pt-BR')}</p></div></div>
+            <div style="text-align:right"><strong>Total</strong><br><span style="font-size:20px;color:#0f6f75;font-weight:800">${money(total)}</span></div>
+          </div>
+          <div class="print-grid">
+            <div><div class="print-label">Paciente</div><div class="print-value">${safe(patient.nome || 'Não informado')}</div></div>
+            <div><div class="print-label">Atendente</div><div class="print-value">${safe(patient.atendente || 'Não informado')}</div></div>
+            <div><div class="print-label">Data</div><div class="print-value">${safe(dateBR(patient.data) || 'Não informada')}</div></div>
+            <div><div class="print-label">Contato</div><div class="print-value">${safe(patient.contato || 'Não informado')}</div></div>
+            <div><div class="print-label">Convênio</div><div class="print-value">${safe(patient.convenio || 'PARTICULAR')}</div></div>
+          </div>
+          <table class="print-table"><thead><tr><th>#</th><th>Exame / Procedimento</th><th>Qtde</th><th>Valor</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table>
+          <div class="print-total">
+            <div class="print-total-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
+            <div class="print-total-row"><span>Desconto (${clampDiscount(state.desconto)}%)</span><strong>− ${money(discount)}</strong></div>
+            <div class="print-total-row print-grand"><span>Total a pagar</span><span>${money(total)}</span></div>
+          </div>
+          <p class="print-footer">Este orçamento tem finalidade informativa e pode estar sujeito à confirmação de disponibilidade, preparo, regras institucionais e atualização de valores. Para dúvidas, entre em contato pelo telefone informado.</p>
+        </div>`;
+    }
+
+    function printBudget() {
+      updatePrintArea();
+      window.print();
+    }
+
+    async function copySummary() {
+      const patient = getPatient();
+      const subtotal = state.items.reduce((sum, item) => sum + item.preco * item.qty, 0);
+      const discount = subtotal * (clampDiscount(state.desconto) / 100);
+      const total = Math.max(0, subtotal - discount);
+      const lines = [
+        'ORÇAMENTO DE EXAMES PARTICULARES',
+        `Paciente: ${patient.nome || 'Não informado'}`,
+        `Atendente: ${patient.atendente || 'Não informado'}`,
+        `Data: ${dateBR(patient.data) || 'Não informada'}`,
+        `Convênio: ${patient.convenio || 'PARTICULAR'}`,
+        '',
+        ...state.items.map((item, i) => `${i + 1}. ${item.nome} — Qtde ${item.qty} — ${money(item.preco * item.qty)}`),
+        '',
+        `Subtotal: ${money(subtotal)}`,
+        `Desconto: ${clampDiscount(state.desconto)}% (${money(discount)})`,
+        `Total a pagar: ${money(total)}`,
+        `Contato: ${patient.contato || '(19) 99804-4102'}`
+      ];
+      try {
+        await navigator.clipboard.writeText(lines.join('\n'));
+        toast('Resumo copiado para a área de transferência.');
+      } catch (error) {
+        toast('Não foi possível copiar automaticamente.');
+      }
+    }
+
+    let toastTimer = null;
+    function toast(message) {
+      const el = byId('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+  </script>
+</body>
+</html>
